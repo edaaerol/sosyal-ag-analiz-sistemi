@@ -2,152 +2,256 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_KULLANICI 1000 // Maksimum kullanýcý sayýsý
-#define MAX_ARCADAS 100    // Bir kullanýcýnýn maksimum arkadaþ sayýsý
+#define MAX_KULLANICI 1000
+#define MAX_ARCADAS 100
+#define KIRMIZI 0
+#define SIYAH 1
 
-#define KIRMIZI 0          // Red-Black Tree'de kýrmýzý renk deðeri
-#define SIYAH 1            // Red-Black Tree'de siyah renk deðeri
-
-// Kullanýcýyý temsil eden yapý
+// KullanÄ±cÄ±yÄ± temsil eden yapÄ±
 struct Kullanici {
-    int id;                // Kullanýcý ID'si
-    int arkadasSayisi;     // Kullanýcýnýn arkadaþ sayýsý
-    int arkadaslar[MAX_ARCADAS]; // Kullanýcýnýn arkadaþlarýnýn ID'leri
+    int id;
+    int arkadasSayisi;
+    int arkadaslar[MAX_ARCADAS];
 };
 
-// Red-Black Tree düðüm yapýsý
+// Red-Black Tree dÃ¼ÄŸÃ¼m yapÄ±sÄ±
 struct RBTDugum {
-    struct Kullanici* kullanici;    // Düðümdeki kullanýcý
-    int renk;                       // Düðümün rengi (KIRMIZI veya SIYAH)
-    struct RBTDugum* sol;           // Sol alt düðüm
-    struct RBTDugum* sag;           // Sað alt düðüm
-    struct RBTDugum* ebeveyn;       // Üst düðüm (ebeveyn)
+    struct Kullanici* kullanici;
+    int renk;
+    struct RBTDugum* sol;
+    struct RBTDugum* sag;
+    struct RBTDugum* ebeveyn;
 };
 
-RBTDugum* kok = NULL;  // Red-Black Tree'nin kök düðümü
-
-// Kullanýcýlarýn bilgilerini tutan dizi
+struct RBTDugum* kok = NULL;
 struct Kullanici kullanicilar[MAX_KULLANICI];
-int toplamKullanici = 0;  // Toplam kullanýcý sayýsý
+int toplamKullanici = 0;
 
-// Fonksiyon Prototipleri
-struct Kullanici* kullaniciGetir(int id);
-void arkadasEkle(int id1, int id2);
-void veriDosyasiniOku(const char* dosyaAdi);
-void dfsAra(int baslangicID, int hedefDerinlik, int mevcutDerinlik, int ziyaretEdildi[], int sonuc[], int* sayac);
-void arkadaslariBul(int kullaniciID);
-void topluluklariBul();
-void ortakArkadaslariBul(int id1, int id2);
-
-// Red-Black Tree Fonksiyonlarý
-RBTDugum* rbtEkle(RBTDugum* kok, struct Kullanici* kullanici);
-RBTDugum* yeniRBTDugumu(struct Kullanici* kullanici);
-RBTDugum* solaDondur(RBTDugum* kok, RBTDugum* x);
-RBTDugum* sagaDondur(RBTDugum* kok, RBTDugum* y);
-RBTDugum* duzeltEkleme(RBTDugum* kok, RBTDugum* z);
-void siraliListele(RBTDugum* kok);
-
-// Kullanýcýyý ID'ye göre getirir, yoksa yeni olusturur
+// KullanÄ±cÄ±yÄ± ID'ye gÃ¶re getirir, yoksa yeni oluÅŸturur
 struct Kullanici* kullaniciGetir(int id) {
     for (int i = 0; i < toplamKullanici; i++) {
-        if (kullanicilar[i].id == id) return &kullanicilar[i];  // Kullanýcý bulundu
+        if (kullanicilar[i].id == id) return &kullanicilar[i];
     }
-    // Kullanýcý bulunamadýysa yeni kullanýcý ekle
     kullanicilar[toplamKullanici].id = id;
     kullanicilar[toplamKullanici].arkadasSayisi = 0;
     return &kullanicilar[toplamKullanici++];
 }
 
-// Arkadaþlýk iliþkisi ekler
+// ArkadaÅŸlÄ±k iliÅŸkisi ekler
 void arkadasEkle(int id1, int id2) {
-    struct Kullanici* k1 = kullaniciGetir(id1);  // id1 için kullanýcýyý getir
-    struct Kullanici* k2 = kullaniciGetir(id2);  // id2 için kullanýcýyý getir
-    k1->arkadaslar[k1->arkadasSayisi++] = id2;   // id2'yi id1'in arkadaþlarý listesine ekle
-    k2->arkadaslar[k2->arkadasSayisi++] = id1;   // id1'i id2'nin arkadaþlarý listesine ekle
+    struct Kullanici* k1 = kullaniciGetir(id1);
+    struct Kullanici* k2 = kullaniciGetir(id2);
+    k1->arkadaslar[k1->arkadasSayisi++] = id2;
+    k2->arkadaslar[k2->arkadasSayisi++] = id1;
 }
 
-// Dosyadaki verileri okur ve kullanýcýlarý ekler
+// Red-Black Tree'de yeni dÃ¼ÄŸÃ¼m oluÅŸturur
+struct RBTDugum* yeniRBTDugumu(struct Kullanici* kullanici) {
+    struct RBTDugum* yeni = (struct RBTDugum*)malloc(sizeof(struct RBTDugum));
+    yeni->kullanici = kullanici;
+    yeni->renk = KIRMIZI;
+    yeni->sol = yeni->sag = yeni->ebeveyn = NULL;
+    return yeni;
+}
+
+// Red-Black Tree'de sola dÃ¶nÃ¼ÅŸ iÅŸlemi yapar
+struct RBTDugum* solaDondur(struct RBTDugum* kok, struct RBTDugum* x) {
+    struct RBTDugum* y = x->sag;
+    x->sag = y->sol;
+    if (y->sol) y->sol->ebeveyn = x;
+    y->ebeveyn = x->ebeveyn;
+    if (!x->ebeveyn) kok = y;
+    else if (x == x->ebeveyn->sol) x->ebeveyn->sol = y;
+    else x->ebeveyn->sag = y;
+    y->sol = x;
+    x->ebeveyn = y;
+    return kok;
+}
+
+// Red-Black Tree'de saÄŸa dÃ¶nÃ¼ÅŸ iÅŸlemi yapar
+struct RBTDugum* sagaDondur(struct RBTDugum* kok, struct RBTDugum* y) {
+    struct RBTDugum* x = y->sol;
+    y->sol = x->sag;
+    if (x->sag) x->sag->ebeveyn = y;
+    x->ebeveyn = y->ebeveyn;
+    if (!y->ebeveyn) kok = x;
+    else if (y == y->ebeveyn->sol) y->ebeveyn->sol = x;
+    else y->ebeveyn->sag = x;
+    x->sag = y;
+    y->ebeveyn = x;
+    return kok;
+}
+
+// Red-Black Tree'de ekleme sonrasÄ± dengeleme iÅŸlemi
+struct RBTDugum* duzeltEkleme(struct RBTDugum* kok, struct RBTDugum* z) {
+    while (z != kok && z->ebeveyn && z->ebeveyn->renk == KIRMIZI) {
+        if (z->ebeveyn->ebeveyn && z->ebeveyn == z->ebeveyn->ebeveyn->sol) {
+            struct RBTDugum* y = z->ebeveyn->ebeveyn->sag;
+            if (y && y->renk == KIRMIZI) {
+                z->ebeveyn->renk = SIYAH;
+                y->renk = SIYAH;
+                z->ebeveyn->ebeveyn->renk = KIRMIZI;
+                z = z->ebeveyn->ebeveyn;
+            }
+            else {
+                if (z == z->ebeveyn->sag) {
+                    z = z->ebeveyn;
+                    kok = solaDondur(kok, z);
+                }
+                if (z->ebeveyn) {
+                    z->ebeveyn->renk = SIYAH;
+                    if (z->ebeveyn->ebeveyn) {
+                        z->ebeveyn->ebeveyn->renk = KIRMIZI;
+                        kok = sagaDondur(kok, z->ebeveyn->ebeveyn);
+                    }
+                }
+            }
+        }
+        else if (z->ebeveyn->ebeveyn) {
+            struct RBTDugum* y = z->ebeveyn->ebeveyn->sol;
+            if (y && y->renk == KIRMIZI) {
+                z->ebeveyn->renk = SIYAH;
+                y->renk = SIYAH;
+                z->ebeveyn->ebeveyn->renk = KIRMIZI;
+                z = z->ebeveyn->ebeveyn;
+            }
+            else {
+                if (z == z->ebeveyn->sol) {
+                    z = z->ebeveyn;
+                    kok = sagaDondur(kok, z);
+                }
+                if (z->ebeveyn) {
+                    z->ebeveyn->renk = SIYAH;
+                    if (z->ebeveyn->ebeveyn) {
+                        z->ebeveyn->ebeveyn->renk = KIRMIZI;
+                        kok = solaDondur(kok, z->ebeveyn->ebeveyn);
+                    }
+                }
+            }
+        }
+    }
+    kok->renk = SIYAH;
+    return kok;
+}
+
+// Red-Black Tree'ye eleman ekler
+struct RBTDugum* rbtEkle(struct RBTDugum* kok, struct Kullanici* kullanici) {
+    struct RBTDugum* yeni = yeniRBTDugumu(kullanici);
+    if (!kok) {
+        yeni->renk = SIYAH;
+        return yeni;
+    }
+
+    struct RBTDugum* mevcut = kok;
+    struct RBTDugum* ebeveyn = NULL;
+    while (mevcut) {
+        ebeveyn = mevcut;
+        if (kullanici->id < mevcut->kullanici->id) mevcut = mevcut->sol;
+        else mevcut = mevcut->sag;
+    }
+
+    yeni->ebeveyn = ebeveyn;
+    if (kullanici->id < ebeveyn->kullanici->id) ebeveyn->sol = yeni;
+    else ebeveyn->sag = yeni;
+
+    return duzeltEkleme(kok, yeni);
+}
+
+// Red-Black Tree'yi sÄ±ralÄ± ÅŸekilde yazdÄ±rÄ±r
+void siraliListele(struct RBTDugum* kok) {
+    if (kok != NULL) {
+        siraliListele(kok->sol);
+        printf("%d ", kok->kullanici->id);
+        siraliListele(kok->sag);
+    }
+}
+
+// Dosyadaki verileri okur ve kullanÄ±cÄ±larÄ± ekler
 void veriDosyasiniOku(const char* dosyaAdi) {
-    FILE* dosya = fopen(dosyaAdi, "r");  // Dosyayý aç
+    FILE* dosya = fopen(dosyaAdi, "r");
     if (!dosya) {
         printf("Dosya acilamadi.\n");
-        exit(1);  // Dosya açýlamazsa programdan çýk
+        return;
     }
+
     char satir[100];
     while (fgets(satir, sizeof(satir), dosya)) {
         if (strncmp(satir, "USER", 4) == 0) {
             int id;
-            sscanf(satir, "USER %d", &id);  // USER satýrýndaki ID'yi oku
+            sscanf(satir, "USER %d", &id);
             struct Kullanici* yeniKullanici = kullaniciGetir(id);
-            kok = rbtEkle(kok, yeniKullanici);  // Yeni kullanýcýyý Red-Black Tree'ye ekle
+            kok = rbtEkle(kok, yeniKullanici);
         }
         else if (strncmp(satir, "FRIEND", 6) == 0) {
             int id1, id2;
-            sscanf(satir, "FRIEND %d %d", &id1, &id2);  // FRIEND satýrýndaki iki ID'yi oku
-            arkadasEkle(id1, id2);  // Ýki kullanýcýyý arkadaþ yap
+            sscanf(satir, "FRIEND %d %d", &id1, &id2);
+            arkadasEkle(id1, id2);
         }
     }
-    fclose(dosya);  // Dosyayý kapat
+    printf("Dosya basariyla okundu.\n");
+    fclose(dosya);
 }
 
-// Derinlik öncelikli arama (DFS) algoritmasý
+// Derinlik Ã¶ncelikli arama (DFS) algoritmasÄ±
 void dfsAra(int baslangicID, int hedefDerinlik, int mevcutDerinlik, int ziyaretEdildi[], int sonuc[], int* sayac) {
-    ziyaretEdildi[baslangicID] = 1;  // Mevcut kullanýcýyý ziyaret ettik
+    ziyaretEdildi[baslangicID] = 1;
+
     if (mevcutDerinlik == hedefDerinlik) {
-        sonuc[(*sayac)++] = baslangicID;  // Ýlgili derinlikteki kullanýcýyý sonuçlara ekle
+        sonuc[(*sayac)++] = baslangicID;
         return;
     }
-    struct Kullanici* kullanici = kullaniciGetir(baslangicID);  // Kullanýcýyý getir
+
+    struct Kullanici* kullanici = kullaniciGetir(baslangicID);
     for (int i = 0; i < kullanici->arkadasSayisi; i++) {
-        int arkadasID = kullanici->arkadaslar[i];  // Arkadaþ ID'sini al
+        int arkadasID = kullanici->arkadaslar[i];
         if (!ziyaretEdildi[arkadasID]) {
-            dfsAra(arkadasID, hedefDerinlik, mevcutDerinlik + 1, ziyaretEdildi, sonuc, sayac);  // Rekürsif olarak arkadaþlarý ara
+            dfsAra(arkadasID, hedefDerinlik, mevcutDerinlik + 1, ziyaretEdildi, sonuc, sayac);
         }
     }
 }
 
-// Kullanýcýnýn 1. ve 2. derece arkadaþlarýný bulur
+// KullanÄ±cÄ±nÄ±n 1. ve 2. derece arkadaÅŸlarÄ±nÄ± bulur
 void arkadaslariBul(int kullaniciID) {
-    int ziyaretEdildi[MAX_KULLANICI] = { 0 };  // Ziyaret edilmeyen kullanýcýlarý iþaretle
-    int birinciSeviye[MAX_KULLANICI];  // Birinci derece arkadaþlar
-    int ikinciSeviye[MAX_KULLANICI];  // Ýkinci derece arkadaþlar
-    int sayac1 = 0, sayac2 = 0;  // Arkadaþ sayacý
+    int ziyaretEdildi[MAX_KULLANICI] = { 0 };
+    int birinciSeviye[MAX_KULLANICI];
+    int ikinciSeviye[MAX_KULLANICI];
+    int sayac1 = 0, sayac2 = 0;
 
-    // 1. derece arkadaþlarý bul
+    // 1. derece arkadaÅŸlarÄ± bul
     dfsAra(kullaniciID, 1, 0, ziyaretEdildi, birinciSeviye, &sayac1);
 
-    // 2. derece arkadaþlarý bul
-    memset(ziyaretEdildi, 0, sizeof(ziyaretEdildi));  // Ziyaret edilmeyenleri sýfýrla
+    // 2. derece arkadaÅŸlarÄ± bul
+    memset(ziyaretEdildi, 0, sizeof(ziyaretEdildi));
     dfsAra(kullaniciID, 2, 0, ziyaretEdildi, ikinciSeviye, &sayac2);
 
-    // 1. derece arkadaþlarý yazdýr
+    // 1. derece arkadaÅŸlarÄ± yazdÄ±r
     printf("Birinci seviye arkadaslar: ");
     for (int i = 0; i < sayac1; i++)
         if (birinciSeviye[i] != kullaniciID) printf("%d ", birinciSeviye[i]);
     printf("\n");
 
-    // 2. derece arkadaþlarý yazdýr
+    // 2. derece arkadaÅŸlarÄ± yazdÄ±r
     printf("Ikinci seviye arkadaslar: ");
     for (int i = 0; i < sayac2; i++) {
         int id = ikinciSeviye[i];
         int atla = 0;
-        // Ortak arkadaþlarý atlama
+        // Ortak arkadaÅŸlarÄ± atlama
         for (int j = 0; j < sayac1; j++)
             if (birinciSeviye[j] == id) atla = 1;
         if (!atla && id != kullaniciID)
             printf("%d ", id);
     }
-    printf("\nEtki Alani: %d\n", sayac1 + sayac2);  // Etki alaný: 1. ve 2. derece arkadaþlarýn toplamý
+    printf("\nEtki Alani: %d\n", sayac1 + sayac2);
 }
 
-// Ýki kullanýcýnýn ortak arkadaþlarýný bulur
+// Ä°ki kullanÄ±cÄ±nÄ±n ortak arkadaÅŸlarÄ±nÄ± bulur
 void ortakArkadaslariBul(int id1, int id2) {
     struct Kullanici* k1 = kullaniciGetir(id1);
     struct Kullanici* k2 = kullaniciGetir(id2);
     printf("%d ve %d numarali kullanicilarin ortak arkadaslari: ", id1, id2);
     for (int i = 0; i < k1->arkadasSayisi; i++) {
         for (int j = 0; j < k2->arkadasSayisi; j++) {
-            if (k1->arkadaslar[i] == k2->arkadaslar[j]) {  // Ortak arkadaþ bulunduysa
+            if (k1->arkadaslar[i] == k2->arkadaslar[j]) {
                 printf("%d ", k1->arkadaslar[i]);
             }
         }
@@ -155,129 +259,83 @@ void ortakArkadaslariBul(int id1, int id2) {
     printf("\n");
 }
 
-// Kullanýcýlarý topluluklar halinde bulur
+// KullanÄ±cÄ±larÄ± topluluklar halinde bulur
 void topluluklariBul() {
     int ziyaretEdildi[MAX_KULLANICI] = { 0 };
     printf("Topluluklar:\n");
     for (int i = 0; i < toplamKullanici; i++) {
         int id = kullanicilar[i].id;
-        if (!ziyaretEdildi[id]) {  // Ziyaret edilmemiþse
+        if (!ziyaretEdildi[id]) {
             int grup[MAX_KULLANICI];
             int grupSayisi = 0;
-            dfsAra(id, MAX_KULLANICI, 0, ziyaretEdildi, grup, &grupSayisi);  // DFS baþlat
+            dfsAra(id, MAX_KULLANICI, 0, ziyaretEdildi, grup, &grupSayisi);
             printf("Topluluk: ");
             for (int j = 0; j < grupSayisi; j++) {
-                printf("%d ", grup[j]);  // Topluluk üyelerini yazdýr
+                printf("%d ", grup[j]);
             }
             printf("\n");
         }
     }
 }
 
-// Red-Black Tree'de yeni düðüm oluþturur
-RBTDugum* yeniRBTDugumu(struct Kullanici* kullanici) {
-    RBTDugum* yeni = (RBTDugum*)malloc(sizeof(RBTDugum));  // Yeni düðüm için bellek ayýr
-    yeni->kullanici = kullanici;
-    yeni->renk = KIRMIZI;  // Yeni düðüm baþlangýçta kýrmýzý
-    yeni->sol = yeni->sag = yeni->ebeveyn = NULL;  // Düðümün baðlantýlarýný sýfýrla
-    return yeni;
+// Ana menÃ¼
+void menuGoster() {
+    printf("\n--- SOSYAL AG ANALIZ SISTEMI ---\n");
+    printf("1. Veri Dosyasini Oku\n");
+    printf("2. Arkadaslik Iliskisi Ekle\n");
+    printf("3. Kullanici Arkadaslarini Goster\n");
+    printf("4. Ortak Arkadaslari Bul\n");
+    printf("5. Topluluklari Tespit Et\n");
+    printf("6. Tum Kullanicilari Goster\n");
+    printf("0. Cikis\n");
+    printf("Seciminiz: ");
 }
 
-// Red-Black Tree'de sola dönüþ iþlemi yapar
-RBTDugum* solaDondur(RBTDugum* kok, RBTDugum* x) {
-    RBTDugum* y = x->sag;  // x'in sað çocuðunu y'ye ata
-    x->sag = y->sol;  // y'nin sol çocuðunu x'in sað çocuðuna ata
-    if (y->sol) y->sol->ebeveyn = x;  // y'nin sol çocuðunun ebeveynini güncelle
-    y->ebeveyn = x->ebeveyn;  // x'in ebeveynini y'ye ata
-    if (!x->ebeveyn) kok = y;  // Eðer x kökse, kökü y olarak güncelle
-    else if (x == x->ebeveyn->sol) x->ebeveyn->sol = y;  // x'in ebeveyni x'i sol çocuk olarak tutuyorsa
-    else x->ebeveyn->sag = y;  // x sað çocuksa, ebeveynin sað çocuðunu güncelle
-    y->sol = x;  // x'i y'nin sol çocuðu yap
-    x->ebeveyn = y;  // x'in ebeveynini y olarak ata
-    return kok;
-}
+int main() {
+    int secim, id1, id2;
+    char dosyaAdi[100];
 
-// Red-Black Tree'de saða dönüþ iþlemi yapar
-RBTDugum* sagaDondur(RBTDugum* kok, RBTDugum* y) {
-    RBTDugum* x = y->sol;  // y'nin sol çocuðunu x'e ata
-    y->sol = x->sag;  // x'in sað çocuðunu y'nin sol çocuðuna ata
-    if (x->sag) x->sag->ebeveyn = y;  // x'in sað çocuðunun ebeveynini y olarak güncelle
-    x->ebeveyn = y->ebeveyn;  // y'nin ebeveynini x'e ata
-    if (!y->ebeveyn) kok = x;  // Eðer y kökse, kökü x olarak güncelle
-    else if (y == y->ebeveyn->sol) y->ebeveyn->sol = x;  // y sol çocuksa
-    else y->ebeveyn->sag = x;  // y sað çocuksa
-    x->sag = y;  // y'yi x'in sað çocuðu yap
-    y->ebeveyn = x;  // y'nin ebeveynini x olarak ata
-    return kok;
-}
+    do {
+        menuGoster();
+        scanf("%d", &secim);
 
-// Red-Black Tree'ye eleman ekler
-RBTDugum* rbtEkle(RBTDugum* kok, struct Kullanici* kullanici) {
-    RBTDugum* yeni = yeniRBTDugumu(kullanici);  // Yeni düðüm oluþtur
-    if (!kok) return yeni;  // Eðer aðacýn kökü boþsa, yeni düðümü kök yap
-    RBTDugum* mevcut = kok;
-    RBTDugum* ebeveyn = NULL;
-    while (mevcut) {
-        ebeveyn = mevcut;
-        if (kullanici->id < mevcut->kullanici->id) mevcut = mevcut->sol;  // ID küçükse sol alt düðüme git
-        else mevcut = mevcut->sag;  // ID büyükse sað alt düðüme git
-    }
-    yeni->ebeveyn = ebeveyn;
-    if (kullanici->id < ebeveyn->kullanici->id) ebeveyn->sol = yeni;
-    else ebeveyn->sag = yeni;
-    kok = duzeltEkleme(kok, yeni);  // Red-Black Tree dengeleme iþlemi
-    return kok;
-}
-
-// Red-Black Tree'de ekleme sonrasý dengeleme iþlemi
-RBTDugum* duzeltEkleme(RBTDugum* kok, RBTDugum* z) {
-    while (z != kok && z->ebeveyn->renk == KIRMIZI) {  // Eðer ebeveyn kýrmýzýysa düzeltme yap
-        if (z->ebeveyn == z->ebeveyn->ebeveyn->sol) {
-            RBTDugum* y = z->ebeveyn->ebeveyn->sag;
-            if (y && y->renk == KIRMIZI) {  // Eðer amca kýrmýzýysa
-                z->ebeveyn->renk = SIYAH;  // Ebeveyn ve amca siyah olur
-                y->renk = SIYAH;
-                z->ebeveyn->ebeveyn->renk = KIRMIZI;  // Büyük ebeveyn kýrmýzý olur
-                z = z->ebeveyn->ebeveyn;  // Büyük ebeveyn üzerinde iþlem yap
-            }
-            else {
-                if (z == z->ebeveyn->sag) {
-                    z = z->ebeveyn;  // z sol alt aðaçta ise ebeveyn üzerinde iþlem yap
-                    kok = solaDondur(kok, z);  // Ebeveyn üzerinde sola dönüþ yap
-                }
-                z->ebeveyn->renk = SIYAH;  // Ebeveyn siyah olur
-                z->ebeveyn->ebeveyn->renk = KIRMIZI;  // Büyük ebeveyn kýrmýzý olur
-                kok = sagaDondur(kok, z->ebeveyn->ebeveyn);  // Büyük ebeveyn üzerinde saða dönüþ yap
-            }
+        switch (secim) {
+        case 0:
+            printf("Programdan cikiliyor...\n");
+            break;
+        case 1:
+            printf("Veri dosyasi adini girin: ");
+            scanf("%s", dosyaAdi);
+            veriDosyasiniOku(dosyaAdi);
+            break;
+        case 2:
+            printf("Iki kullanici ID'sini girin: ");
+            scanf("%d %d", &id1, &id2);
+            arkadasEkle(id1, id2);
+            printf("Arkadaslik iliskisi eklendi.\n");
+            break;
+        case 3:
+            printf("Kullanici ID'sini girin: ");
+            scanf("%d", &id1);
+            arkadaslariBul(id1);
+            break;
+        case 4:
+            printf("Iki kullanici ID'sini girin: ");
+            scanf("%d %d", &id1, &id2);
+            ortakArkadaslariBul(id1, id2);
+            break;
+        case 5:
+            topluluklariBul();
+            break;
+        case 6:
+            printf("Kullanicilar: ");
+            siraliListele(kok);
+            printf("\n");
+            break;
+        default:
+            printf("Gecersiz secim!\n");
         }
-        else {
-            RBTDugum* y = z->ebeveyn->ebeveyn->sol;
-            if (y && y->renk == KIRMIZI) {  // Eðer amca kýrmýzýysa
-                z->ebeveyn->renk = SIYAH;  // Ebeveyn ve amca siyah olur
-                y->renk = SIYAH;
-                z->ebeveyn->ebeveyn->renk = KIRMIZI;  // Büyük ebeveyn kýrmýzý olur
-                z = z->ebeveyn->ebeveyn;  // Büyük ebeveyn üzerinde iþlem yap
-            }
-            else {
-                if (z == z->ebeveyn->sol) {
-                    z = z->ebeveyn;  // z sað alt aðaçta ise ebeveyn üzerinde iþlem yap
-                    kok = sagaDondur(kok, z);  // Ebeveyn üzerinde saða dönüþ yap
-                }
-                z->ebeveyn->renk = SIYAH;  // Ebeveyn siyah olur
-                z->ebeveyn->ebeveyn->renk = KIRMIZI;  // Büyük ebeveyn kýrmýzý olur
-                kok = solaDondur(kok, z->ebeveyn->ebeveyn);  // Büyük ebeveyn üzerinde sola dönüþ yap
-            }
-        }
-    }
-    kok->renk = SIYAH;  // Kök her zaman siyah olur
-    return kok;
-}
+    } while (secim != 0);
 
-// Red-Black Tree'yi sýralý þekilde yazdýrýr
-void siraliListele(RBTDugum* kok) {
-    if (kok != NULL) {
-        siraliListele(kok->sol);  // Önce sol alt aðacý yazdýr
-        printf("%d ", kok->kullanici->id);  // Kullanýcý ID'sini yazdýr
-        siraliListele(kok->sag);  // Sonra sað alt aðacý yazdýr
-    }
+    return 0;
 }
