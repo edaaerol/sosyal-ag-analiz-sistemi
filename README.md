@@ -1,63 +1,82 @@
-# sosyal-ag-analiz-sistemi
 # Sosyal Ağ Analiz Sistemi
 
-## Proje Açıklaması
-Bu proje, sosyal ağlardaki kullanıcı ilişkilerini modellemek ve analiz etmek amacıyla geliştirilmiştir. Kullanıcılar arasındaki ilişkiler, **ağaç veri yapıları** kullanılarak modellenmiştir. Bu sistem, derinlik öncelikli arama (DFS), ortak arkadaş analizi, topluluk tespiti ve etki alanı hesaplama gibi analizler yapabilmektedir. Proje, ayrıca **kırmızı-siyah ağaç** veri yapısını içeren bir yapıyı kullanarak kullanıcıların ilişkilerini verimli bir şekilde depolar.
+C dilinde geliştirilmiş, **Red-Black Tree** veri yapısını kullanan bir sosyal ağ analiz sistemi. Bu program, kullanıcılar arasındaki arkadaşlık ilişkilerini takip eder ve çeşitli sosyal ağ analizleri yapmanıza olanak tanır.
 
 ## Özellikler
 
-- **Ağaç Veri Yapısı Kullanımı:** Kullanıcılar ve ilişkileri, ağaç veri yapısı kullanılarak modellenir.
-- **Derinlik Öncelikli Arama (DFS):** Kullanıcılar arasındaki ilişkileri keşfetmek için DFS algoritması uygulanır.
-- **Ortak Arkadaş Analizi:** Kullanıcılar arasındaki ortak arkadaşlar belirlenebilir.
-- **Topluluk Tespiti:** Sosyal ağdaki benzer özelliklere sahip kullanıcılar gruplandırılır.
-- **Etki Alanı Hesaplama:** Bir kullanıcının ağdaki etkisi ve bağlı olduğu kişiler hesaplanır.
-- **Kırmızı-Siyah Ağaç:** Kullanıcıların ilişkileri, verimli arama ve güncelleme işlemleri için kırmızı-siyah ağaç kullanılarak saklanır.
+- **Kullanıcı Yönetimi**: Kullanıcıları Red-Black Tree veri yapısında saklar ve yönetir
+- **Arkadaşlık İlişkileri**: Kullanıcılar arasında arkadaşlık bağlantıları oluşturur
+- **Derinlik Analizi**: Birinci ve ikinci seviye arkadaşları tespit eder
+- **Sosyal Çevre Etki Alanı**: Bir kullanıcının etki alanını hesaplar
+- **Ortak Arkadaş Tespiti**: İki kullanıcı arasındaki ortak arkadaşları bulur
+- **Topluluk Tespiti**: Ağdaki bağlantılı toplulukları tespit eder
+- **Veri Dosyası Desteği**: Metin dosyalarından veri okuyabilme kabiliyeti
+
+## Teknik Altyapı
+
+- **Red-Black Tree** veri yapısı ile verimli kullanıcı aramaları
+- **DFS** (Derinlik Öncelikli Arama) algoritması ile ağ analizi
+- C dilinin dinamik bellek yönetim yetenekleri
 
 ## Kullanım
 
-### Derleme ve Çalıştırma
+### Derleme
 
-Bu kodu çalıştırmak için bir C derleyicisine ihtiyacınız vardır. GCC kullanarak şu şekilde derleyebilirsiniz:
-
-```sh
-gcc social_network_analysis.c -o social_network_analysis
-./social_network_analysis
-```
-Örnek Çıktı
-Kod çalıştırıldığında aşağıdaki gibi bir çıktı üretilecektir:
-
-
-Topluluklar:
-------------------------
-Topluluk 1: [Kullanıcı A, Kullanıcı B, Kullanıcı C]
-
-Topluluk 2: [Kullanıcı D, Kullanıcı E]
-
-Ortak Arkadaşlar:
-------------------------
-Kullanıcı A ve Kullanıcı B'nin ortak arkadaşları: [Kullanıcı C]
-
-Kullanıcı A'nın Etki Alanı: [Kullanıcı B, Kullanıcı C]
-
-Fonksiyonlar
-------------------------
-```sh
-void initSocialNetwork(SocialNetwork* network): Sosyal ağ sistemini başlatır.
-
-void addUser(SocialNetwork* network, const char* userName): Yeni bir kullanıcıyı sosyal ağa ekler.
-
-void addFriendship(SocialNetwork* network, const char* user1, const char* user2): İki kullanıcı arasında arkadaşlık ilişkisi ekler.
-
-void dfs(SocialNetwork* network, const char* startUser): Derinlik öncelikli arama (DFS) algoritmasını başlatır.
-
-void commonFriends(SocialNetwork* network, const char* user1, const char* user2): İki kullanıcı arasındaki ortak arkadaşları listeler.
-
-void detectCommunities(SocialNetwork* network): Sosyal ağdaki toplulukları tespit eder.
-
-void calculateInfluence(SocialNetwork* network, const char* user): Bir kullanıcının sosyal ağdaki etkisini hesaplar.
-
-void printNetwork(SocialNetwork* network): Tüm sosyal ağı ve kullanıcı ilişkilerini yazdırır.
+```bash
+gcc -o sosyal_ag_analiz sosyal_ag_analiz.c
 ```
 
-Lisans
-Bu proje MIT Lisansı ile lisanslanmıştır. Daha fazla bilgi için LICENSE dosyasına bakabilirsiniz.
+### Çalıştırma
+
+```bash
+./sosyal_ag_analiz
+```
+
+### Menü Seçenekleri
+
+Programı çalıştırdığınızda aşağıdaki menü seçenekleri görüntülenir:
+
+1. **Veri Dosyasını Oku**: Dışarıdan bir dosyadan kullanıcı ve arkadaşlık verilerini okur
+2. **Arkadaşlık İlişkisi Ekle**: İki kullanıcı arasında yeni bir arkadaşlık bağlantısı oluşturur
+3. **Kullanıcı Arkadaşlarını Göster**: Bir kullanıcının birinci ve ikinci seviye arkadaşlarını listeler
+4. **Ortak Arkadaşları Bul**: İki kullanıcı arasındaki ortak arkadaşları bulur
+5. **Toplulukları Tespit Et**: Ağdaki bağlantılı toplulukları tespit eder
+6. **Tüm Kullanıcıları Göster**: Sistemdeki tüm kullanıcıları sıralı olarak gösterir
+0. **Çıkış**: Programdan çıkar
+
+## Veri Dosya Formatı
+
+Program, aşağıdaki formatta veri dosyaları kabul eder:
+
+```
+USER [id]
+FRIEND [id1] [id2]
+```
+
+**Örnek:**
+```
+USER 101
+USER 102
+USER 103
+FRIEND 101 102
+FRIEND 102 103
+```
+
+## Kısıtlamalar
+
+- Maksimum kullanıcı sayısı: **1000**
+- Bir kullanıcının maksimum arkadaş sayısı: **100**
+
+## Algoritma Detayları
+
+### Red-Black Tree
+
+Program, kullanıcıları verimli şekilde saklamak ve aramak için bir **Red-Black Tree** veri yapısı kullanır. Bu yapı, **O(log n)** zaman karmaşıklığında arama, ekleme ve silme işlemlerine olanak tanır.
+
+### DFS (Derinlik Öncelikli Arama)
+
+Ağdaki bağlantıları analiz etmek için **DFS algoritması** kullanılmaktadır. Bu algoritma, belirli derinlikteki arkadaşları bulmak ve toplulukları tespit etmek için kullanılır.
+
+## Lisans
+
+Bu proje açık kaynak olarak **MIT lisansı** altında dağıtılmaktadır. Daha fazla bilgi için `LICENSE` dosyasını inceleyebilirsiniz.
